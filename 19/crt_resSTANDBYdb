@@ -1,0 +1,17 @@
+
+
+crsctl delete resource resDBOSEW01db -f
+
+crsctl add resource resDBOSEW01db -type application  \
+ -attr "ACTION_SCRIPT=/DBA/nest/oracle/xbin/resdb,    \
+        DESCRIPTION=resDBOSEW01db,           \
+        HOSTING_MEMBERS=debmu402,            \
+        CHECK_INTERVAL=60,                                    \
+        SCRIPT_TIMEOUT=120,                                    \
+        RESTART_ATTEMPTS=5,                                   \
+        USR_ORA_LANG=/DBA/oracle/product/19.3.0.0, \
+        USR_ORA_SRV=DBOSEW01, \
+        AUTO_START=always"
+
+crsctl start resource resDBOSEW01db
+crsctl stat res resDBOSEW01db -p

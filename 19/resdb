@@ -1,0 +1,54 @@
+#!/bin/bash
+#
+#
+ACTION=$1
+LOGDIR=/DBA/nest/oracle/+ASM/out
+SCRIPTNAME=`basename $0`
+DATESTAMP=`date '+%Y%m%d'`
+LOGFILE=$LOGDIR/${SCRIPTNAME}.${DATESTAMP}.log
+RC_ERROR=1
+RC_OK=0
+DEBUG=1
+
+export ORACLE_HOME=$_USR_ORA_LANG
+export ORACLE_SID=$_USR_ORA_SRV
+export LD_LIBRARY_PATH=$ORACLE_HOME:$LD_LIBRARY_PATH
+
+
+log()
+{
+   if [ ${DEBUG:-0} -eq 1 ]
+   then
+     echo `date +%Y%m%d.%H%M%S`: $* >> $LOGFILE
+   fi
+}
+
+
+RC=$RC_OK
+
+case "$ACTION" in
+stop)
+		log Exec:$SCRIPTNAME $1 cmd:
+                ;;
+start)
+		log Exec:$SCRIPTNAME $1 cmd:
+                ;;
+check)
+		log Exec:$SCRIPTNAME $1 cmd:
+		ps -ae -o args | grep -w ora_pmon_$ORACLE_SID | grep -v grep >/dev/null
+		if [ $? -ne 0 ]
+                then
+                  echo "Database pmon not running $ORACLE_SID" >> $LOGFILE
+	          RC=0	
+		else
+		  /DBA/nest/oracle/xbin/mnst $ORACLE_SID >> $LOGFILE 2>&1
+	        fi  
+                ;;
+esac
+
+if [ $RC -ne $RC_OK ]
+then
+   log $SCRIPTNAME failed on command $ACTION with RC=$RC
+fi
+
+exit $RC

@@ -1,0 +1,142 @@
+#!/bin/bash
+
+SCRIPTNAME=`basename $0`
+usage="$SCRIPTNAME -check | -exec  
+  
+   -check  :check if dataguard configuration is ready for switchover
+   -exec   :execute switchover
+
+"
+
+####################################################################
+## Verify the input parameters
+####################################################################
+if [ $# -eq 1 ]
+then
+  PARAM=$1
+else
+  echo "Usage: $usage"
+  exit 1
+fi
+
+if [[ $PARAM == "-check" ]] || [[ $PARAM == "-exec" ]]
+then 
+  echo ""
+else 
+  echo "Usage: $usage"
+  exit 1
+fi
+
+
+####################################################################
+## call senv env.
+####################################################################
+. /DBA/nest/senv/senv_profile && . $SENV_HOME/senv.sh QUIET o $SRV_SID
+
+if [ $? -ne 0 ]
+then
+  echo "Unknown Senv-Environment: $SRV_SID. Exiting"
+  exit 1
+fi
+
+
+####################################################################
+## parameters
+####################################################################
+LOW_SID=`echo $SRV_SID|tr [:upper:] [:lower:]`
+ORAPWD=`nestpwd --get sys --batch`
+role="PHYSICAL STANDBY"
+tempfile="/WORK/TMP/$SCRIPTNAME.tmp"
+
+####################################################################
+## check database role
+####################################################################
+s+ -a<<EOI>$tempfile
+select 'ROLE:'||database_role from v\$database;
+EOI
+cat $tempfile |egrep "^ROLE:$role" 2>&1 > /dev/null
+
+if [ $? -ne 0 ]
+then
+  echo "database role for $SRV_SID is not \"$role\", exit 1"
+  exit 1;
+else
+  echo "database role for $SRV_SID is \"$role\", continue with checks..."
+fi
+
+
+####################################################################
+## Check dataguard status
+####################################################################
+echo "check dataguard status..."
+(
+echo "dgmgrl<<EOI"
+echo "connect sys/$ORAPWD@${SRV_SID}_DG"
+echo "show configuration"
+echo "EOI"
+) > $tempfile
+
+. $tempfile|egrep ^SUCCESS 2>&1 > /dev/null
+if [ $? -ne 0 ]
+then
+  echo "dataguard status not ok , exit 	1"
+  exit 1;
+else
+  echo "dataguard status ok, continue with checks..."
+fi
+
+
+####################################################################
+## Check database status
+####################################################################
+echo "check database status..."
+(
+echo "dgmgrl<<EOI"
+echo "connect sys/$ORAPWD@${SRV_SID}_DG"
+echo "show database $LOW_SID"
+echo "EOI"
+) > $tempfile
+
+. $tempfile|egrep ^SUCCESS 2>&1 > /dev/null
+if [ $? -ne 0 ]; then
+  echo "database status not ok , exit 1"
+  exit 1;
+else
+  echo "database status  ok, continue with checks..."
+fi
+
+####################################################################
+## validate command
+####################################################################
+echo "execute validate database ..."
+(
+echo "dgmgrl<<EOI"
+echo "connect sys/$ORAPWD@${SRV_SID}_DG"
+echo "validate database $LOW_SID"
+echo "EOI"
+) > $tempfile
+# . $tempfile|egrep "Ready for Switchover:"2>&1 > /dev/null
+. $tempfile|egrep "^[[:space:]]+Ready for Switchover:[[:space:]]+Yes"
+if [ $? -ne 0 ]; then
+  echo "Switchover status not ok , exit 1"
+  exit 1;
+else
+  echo "Switchover  ok, ready for switchover"
+fi
+
+
+
+if [[ $PARAM == "-exec" ]]
+then 
+echo "switchover to $LOW_SID"
+(
+echo "dgmgrl<<EOI"
+echo "connect sys/$ORAPWD@${SRV_SID}_DG"
+echo "switchover to $LOW_SID"
+echo "EOI"
+) > $tempfile
+
+. $tempfile
+fi
+
+rm -f $tempfile

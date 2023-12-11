@@ -1,0 +1,41 @@
+#!/bin/ksh 
+# ------------------------------------------------------------------------------
+idate()
+{
+        date '+%Y.%m.%d %H:%M:%S'
+}
+# ------------------------------------------------------------------------------
+
+
+PATH=$PATH:/SZIR/bin/	# PATH for subag
+export PATH
+
+if [ $# -eq 1 ]
+then
+	SRV_SID=$1
+elif [ $# -ne 0 ] 
+then
+	echo "wrong arguments "
+	exit 1
+fi
+
+. /DBA/nest/senv/senv_profile && . $SENV_HOME/senv.sh QUIET o $SRV_SID
+
+if [ $? -ne 0 ]
+then
+	echo "Unknown Senv-Environment: $SRV_SID. Exiting"
+	exit 1
+fi
+
+TS=`idate | tr -d ".: "`
+script=`basename $0`
+
+PERL5LIB=/DBA/nest/oracle/xbin:/DBA/nest/oracle/xbin/frame; export PERL5LIB
+PERL_CMD=$ORACLE_HOME/perl/bin/perl
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib
+
+#$PERL_CMD /DBA/nest/oracle/xbin/mst.pl --section $*
+$PERL_CMD /DBA/nest/oracle/xbin/mnst.pl --section [$SRV_SID]
+
+
+
