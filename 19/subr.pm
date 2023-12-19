@@ -1,5 +1,3 @@
-
-
 package subr;
 
 use DBI;
@@ -8,7 +6,7 @@ use File::Copy;
 use File::Compare;
 
 ######################################################################
-# writeStderr(): Write output to stderr
+## writeStderr(): Write output to stderr
 ######################################################################
 sub writeStderr
 {
@@ -27,11 +25,12 @@ sub writeStderr
 }
 
 
-##########################################
-# _check()
-# connect to database and check if it is
-# primary or standby
-##########################################
+######################################################################
+##
+##  _check()
+##  connect to database as sysdba and check and returns database role
+##
+######################################################################
 sub _check {
   my $self = shift;
   my @result;
@@ -77,7 +76,10 @@ sub _check {
 
 
 ###############################################################
-# _readoraclesenv():
+## 
+## _readoraclesenv():
+## reads /DBA/nest/senv/local/oracle.senv into global hash HoH
+## 
 ###############################################################
 sub _readoraclesenv {
   my $self = shift;
@@ -109,7 +111,10 @@ sub _readoraclesenv {
 
 
 ###############################################################
-# _printoraclesenv():
+## 
+##  _printoraclesenv():
+## prints hash HoH into file /WORK/TMP/oracle.senv
+## 
 ###############################################################
 sub _printoraclesenv {
   my $self = shift;
@@ -139,7 +144,10 @@ sub _printoraclesenv {
 
 
 ###############################################################
-# _findreplace():
+## 
+## _findreplace():
+## search and replace in hash HoH
+## 
 ###############################################################
 sub _findreplace {
   my $self = shift;
@@ -166,23 +174,20 @@ sub _findreplace {
 
 
 ###############################################################
-# _replaceoraclesenv():
+## 
+## _replaceoraclesenv():
+## replaces /DBA/nest/senv/local/oracle.senv with /WORK/TMP/oracle.senv
+## 
 ###############################################################
 sub _replaceoraclesenv {
 
-
-if (compare("/WORK/TMP/oracle.senv.$$","/DBA/nest/senv/local/oracle.senv") != 0) {
- # copy("/DBA/nest/senv/local/oracle.senv","/WORK/TMP/oracle.senv.bck.$$") or die "Copy failed: $!";
-  copy("/WORK/TMP/oracle.senv.$$","/DBA/nest/senv/local/oracle.senv") or die "Copy failed: $!";
- } else
-{
-  unlink("/WORK/TMP/oracle.senv.$$") or die "Could not delete the file!\n";
-}
-
-
+  if (compare("/WORK/TMP/oracle.senv.$$","/DBA/nest/senv/local/oracle.senv") != 0) {
+    copy("/WORK/TMP/oracle.senv.$$","/DBA/nest/senv/local/oracle.senv") or die "Copy failed: $!";
+   } else {
+    unlink("/WORK/TMP/oracle.senv.$$") or die "Could not delete the file!\n";
+  }
 
 }
-
 
 
 1; 
