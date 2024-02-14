@@ -1,4 +1,12 @@
 #!/bin/ksh 
+
+#########################################################################################
+##
+## wrapper script for mnst.pl (modify nest ). Chooses the ORACLE_HOME/bin/perl , because
+## this has DBI/DBD library included.
+##
+#########################################################################################
+
 # ------------------------------------------------------------------------------
 idate()
 {
@@ -34,7 +42,6 @@ PERL5LIB=/DBA/nest/oracle/xbin:/DBA/nest/oracle/xbin/frame; export PERL5LIB
 PERL_CMD=$ORACLE_HOME/perl/bin/perl
 export LD_LIBRARY_PATH=$ORACLE_HOME/lib
 
-#$PERL_CMD /DBA/nest/oracle/xbin/mst.pl --section $*
 $PERL_CMD /DBA/nest/oracle/xbin/mnst.pl --section [$SRV_SID]
 
 

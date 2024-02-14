@@ -1,10 +1,11 @@
 #!/bin/bash
 
 SCRIPTNAME=`basename $0`
-usage="$SCRIPTNAME -check | -exec  
+usage="$SCRIPTNAME -precheck | -exec | -postcheck 
   
-   -check  :check if dataguard configuration is ready for switchover
-   -exec   :execute switchover
+   -precheck   :check if dataguard configuration is ready for switchover
+   -exec       :execute switchover
+   -postcheck  :check if dataguard configuration is ready after switchover
 
 "
 
@@ -19,7 +20,7 @@ else
   exit 1
 fi
 
-if [[ $PARAM == "-check" ]] || [[ $PARAM == "-exec" ]]
+if [[ $PARAM == "-precheck" ]] || [[ $PARAM == "-exec" ]] || [[ $PARAM == "-postcheck" ]]
 then 
   echo ""
 else 
@@ -49,6 +50,39 @@ role="PHYSICAL STANDBY"
 tempfile="/WORK/TMP/$SCRIPTNAME.tmp"
 
 ####################################################################
+## basic check if database is running
+####################################################################
+ps -ae -o args | grep -w ora_pmon_$ORACLE_SID | grep -v grep >/dev/null
+if [ $? -ne 0 ]
+then
+  echo "Database pmon not running $ORACLE_SID, Exit 1" 
+  exit 1;
+fi
+
+if [[ $PARAM == "-precheck" ]] || [[ $PARAM == "-exec" ]]
+then
+
+####################################################################
+## check if this is a dataguard configuration
+####################################################################
+s+ -a<<EOI>$tempfile
+select 'DGCONF:'||DATAGUARD_BROKER from v\$database;
+EOI
+cat $tempfile |egrep "^DGCONF:ENABLED" 2>&1 > /dev/null
+
+
+if [ $? -ne 0 ]
+then
+  echo "database $SRV_SID is not a dataguard, exit 0 "
+  exit 0;
+else
+  echo "database $SRV_SID is a dataguard configuration, continue with checks... "
+fi
+
+
+
+
+####################################################################
 ## check database role
 ####################################################################
 s+ -a<<EOI>$tempfile
@@ -58,8 +92,9 @@ cat $tempfile |egrep "^ROLE:$role" 2>&1 > /dev/null
 
 if [ $? -ne 0 ]
 then
-  echo "database role for $SRV_SID is not \"$role\", exit 1"
-  exit 1;
+  echo "database role for $SRV_SID is not \"$role\", exit 99"
+  ## Exit 99 for streamworks control
+  exit 99;
 else
   echo "database role for $SRV_SID is \"$role\", continue with checks..."
 fi
@@ -121,7 +156,9 @@ if [ $? -ne 0 ]; then
   echo "Switchover status not ok , exit 1"
   exit 1;
 else
-  echo "Switchover  ok, ready for switchover"
+  echo "Switchover status ok, ready for switchover"
+fi
+
 fi
 
 
@@ -137,6 +174,29 @@ echo "EOI"
 ) > $tempfile
 
 . $tempfile
+fi
+
+
+if [[ $PARAM == "-postcheck" ]]
+then
+echo "sleeping 10sec"
+sleep 10
+echo "execute validate database ..."
+(
+echo "dgmgrl<<EOI"
+echo "connect sys/$ORAPWD@${SRV_SID}_DG"
+echo "validate database $LOW_SID"
+echo "EOI"
+) > $tempfile
+# . $tempfile|egrep "Ready for Switchover:"2>&1 > /dev/null
+. $tempfile|egrep "^[[:space:]]+Ready for Switchover:[[:space:]]+Yes"
+if [ $? -ne 0 ]; then
+  echo "Switchover status not ok , exit 1"
+  exit 1;
+else
+  echo "Switchover status ok, ready for switchover"
+fi
+
 fi
 
 rm -f $tempfile

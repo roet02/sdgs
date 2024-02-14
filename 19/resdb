@@ -1,11 +1,15 @@
 #!/bin/bash
-#
-#
+
+##################################################################################################
+##
+## Shell script resdb is called by the cluster resource  every 60sec. and checks the database role.
+## 
+##################################################################################################
 ACTION=$1
 LOGDIR=/DBA/nest/oracle/+ASM/out
 SCRIPTNAME=`basename $0`
 DATESTAMP=`date '+%Y%m%d'`
-LOGFILE=$LOGDIR/${SCRIPTNAME}.${DATESTAMP}.log
+LOGFILE=$LOGDIR/${SCRIPTNAME}.${_USR_ORA_SRV}.${DATESTAMP}.log
 RC_ERROR=1
 RC_OK=0
 DEBUG=1
@@ -28,19 +32,25 @@ RC=$RC_OK
 
 case "$ACTION" in
 stop)
-		log Exec:$SCRIPTNAME $1 cmd:
+		log Exec:$SCRIPTNAME $1 :
                 ;;
 start)
-		log Exec:$SCRIPTNAME $1 cmd:
+		log Exec:$SCRIPTNAME $1 :
                 ;;
 check)
-		log Exec:$SCRIPTNAME $1 cmd:
+		log Exec:$SCRIPTNAME $1 :
 		ps -ae -o args | grep -w ora_pmon_$ORACLE_SID | grep -v grep >/dev/null
 		if [ $? -ne 0 ]
                 then
                   echo "Database pmon not running $ORACLE_SID" >> $LOGFILE
 	          RC=0	
 		else
+                  ############################################################################	
+		  ##
+                  ## calls mnst.pl for checking the database role and do the configuration changes
+		  ## if role has changeed.
+		  ##
+                  ############################################################################	
 		  /DBA/nest/oracle/xbin/mnst $ORACLE_SID >> $LOGFILE 2>&1
 	        fi  
                 ;;
