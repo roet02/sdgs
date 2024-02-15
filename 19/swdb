@@ -195,6 +195,9 @@ if [ $? -ne 0 ]; then
   exit 1;
 else
   echo "Switchover status ok, ready for switchover"
+  echo "Final step.."
+  echo "Deleting dlogsrv configuration file to enforce dlogsrv restart"
+  sudo -u oracle rm -f /DBA/nest/oracle/${SRV_SID}/conf/dlogsrv_${SRV_SID}.ctrl
 fi
 
 fi
