@@ -1,13 +1,21 @@
 #!/bin/bash
 
 SCRIPTNAME=`basename $0`
-usage="$SCRIPTNAME -precheck | -exec | -postcheck 
+usage="$SCRIPTNAME --precheck | --exec | --postcheck 
   
-   -precheck   :check if dataguard configuration is ready for switchover
-   -exec       :execute switchover
-   -postcheck  :check if dataguard configuration is ready after switchover
+   --precheck   :check if dataguard configuration is ready for switchover
+   --exec       :execute switchover
+   --postcheck  :check if dataguard configuration is ready after switchover
 
 "
+
+####################################################################
+## Verify the user
+####################################################################
+if [ "$(whoami)" != "oracle" ]; then
+        echo "Script must be run as user: oracle"
+        exit 1
+fi
 
 ####################################################################
 ## Verify the input parameters
@@ -20,7 +28,7 @@ else
   exit 1
 fi
 
-if [[ $PARAM == "-precheck" ]] || [[ $PARAM == "-exec" ]] || [[ $PARAM == "-postcheck" ]]
+if [[ $PARAM == "--precheck" ]] || [[ $PARAM == "--exec" ]] || [[ $PARAM == "--postcheck" ]]
 then 
   echo ""
 else 
@@ -59,7 +67,7 @@ then
   exit 1;
 fi
 
-if [[ $PARAM == "-precheck" ]] || [[ $PARAM == "-exec" ]]
+if [[ $PARAM == "--precheck" ]] || [[ $PARAM == "--exec" ]]
 then
 
 ####################################################################
@@ -163,7 +171,7 @@ fi
 
 
 
-if [[ $PARAM == "-exec" ]]
+if [[ $PARAM == "--exec" ]]
 then 
 echo "switchover to $LOW_SID"
 (
@@ -177,7 +185,7 @@ echo "EOI"
 fi
 
 
-if [[ $PARAM == "-postcheck" ]]
+if [[ $PARAM == "--postcheck" ]]
 then
 echo "sleeping 10sec"
 sleep 10
